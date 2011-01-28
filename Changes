@@ -1,0 +1,15 @@
+Revision history for Alien-SWIG
+------------------------------------------------------------
+Legend:
+BUG:    An actual found or reported bug fix.
+FIX:    Change toward correct behavior, but unreported.
+NEW:    New, previously non-existent feature.
+DOC:    Changes to documentation.
+------------------------------------------------------------
+
+0.00_01  2011-01-29     (developer release)
+         Main module should be complete
+         Handles downloading and installation of SWIG v1.3.28 - 2.0.1
+         Prepped for releasing to CPAN for cpantesters feedback
+
+# END

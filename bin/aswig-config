@@ -1,0 +1,269 @@
+#!/usr/bin/perl
+#
+#   Alien::SWIG - Command-line Alien::SWIG config-listing script
+#
+#   Copyright (c) 2011 Jason McManus
+#
+#   Full POD documentation after __END__
+#
+
+use Pod::Usage; # From Perl >= 5.006
+use Getopt::Long;
+use strict;
+use warnings;
+
+# Ours.
+use Alien::SWIG;
+
+###
+### Variables
+###
+
+use vars qw( $VERSION $TRUE $FALSE $PROGNAME $PROGDESC );
+BEGIN {
+	$VERSION = '0.00_01';
+}
+
+*TRUE      = \1;
+*FALSE     = \0;
+$PROGNAME  = 'aswig-config';
+$PROGDESC  = 'Dump config information about the Alien::SWIG install';
+
+$|=1;
+
+# Argument tree
+my %args = (
+    help    =>
+    {
+        optspec     => 'help|?',
+        desc        => 'Display this help message',
+        required    => $FALSE,
+    },
+    path =>
+    {
+        optspec     => 'path',
+        desc        => 'Print the absolute base path of the SWIG installation',
+        required    => $FALSE,
+    },
+    version =>
+    {
+        optspec     => 'version|swig_version|swigversion',
+        desc        => 'Print the version of the installed copy of SWIG',
+        required    => $FALSE,
+    },
+    includes =>
+    {
+        optspec     => 'includes|incs',
+        desc        => 'Print a list of SWIG -I include directives',
+        required    => $FALSE,
+    },
+    executable =>
+    {
+        optspec     => 'executable|x',
+        desc        => 'Print the absolute path to the SWIG executable',
+        required    => $FALSE,
+    },
+    module_dir =>
+    {
+        optspec     => 'module_dir|moduledir|moddir|mods',
+        desc        => 'Print the absolute of the SWIG module directory',
+        required    => $FALSE,
+    },
+    cmd_line =>
+    {
+        optspec     => 'cmd_line|cmdline|command',
+        desc        => 'Print a full, working command line for running SWIG',
+        required    => $FALSE,
+    },
+);
+
+###
+### Main body
+###
+
+my $opts = get_opts();
+
+my $swig = Alien::SWIG->new();
+
+if( $opts->{path} )
+{
+    print $swig->path();
+}
+elsif( $opts->{version} )
+{
+    print $swig->version();
+}
+elsif( $opts->{executable} )
+{
+    print $swig->executable();
+}
+elsif( $opts->{includes} )
+{
+    print ' ' . $swig->includes() . ' ';
+}
+elsif( $opts->{module_dir} )
+{
+    print $swig->module_dir();
+}
+elsif( $opts->{cmd_line} )
+{
+    print $swig->cmd_line();
+}
+else
+{
+    usage( 2 );
+}
+
+print "\n" if( -t STDIN );
+
+exit( 0 );
+
+###
+### Subs
+###
+
+sub prog_header
+{
+    return $PROGNAME . ' v' . $VERSION . ' - ' . $PROGDESC . "\n";
+}
+
+# Parse and process command-line arguments
+sub get_opts
+{
+    my( %opt_results, %opt_retval );
+
+    # get the parsed options from Getopt::Long
+    GetOptions( \%opt_results, map { $args{$_}->{optspec} } keys( %args ) )
+        or usage( 3 );
+
+    # Asked for help?
+    usage( 0 ) if( $opt_results{help} );
+
+    # Start with defaults
+    for( keys %args )
+    {
+        $opt_retval{$_} = $args{$_}->{default}
+            if( exists( $args{$_}->{default} ) );
+    }
+
+    # Set actual values
+    $opt_retval{$_} = $opt_results{$_}
+        for( keys( %opt_results ) );
+
+    return( \%opt_retval );
+}
+
+sub usage
+{
+    pod2usage( { -message => prog_header(),
+                 -exitval => defined( $_[0] ) ? $_[0] : 42,
+                 -verbose => 1,
+                 -output => \*STDOUT } );
+}
+
+__END__
+
+=pod
+
+=head1 NAME
+
+aswig-config - Dump configuration information about the Alien::SWIG install
+
+=head1 USAGE
+
+    $ aswig-config [OPTION]
+
+=head1 DESCRIPTION
+
+This tool, as part of the L<Alien::SWIG> distribution, is for convenient
+printing of the installed SWIG locations and configuration, for use in
+Makefiles, shell scripts, etc.
+
+=head1 OPTIONS
+
+=head2 --path | -p
+
+Print the absolute base path of the SWIG directory.
+
+=head2 --version | -v
+
+Print the version of the installed IB API (not this program).
+
+=head2 --executable | -x
+
+Print the absolute path of the installed SWIG executable.
+
+=head2 --includes | -i
+
+Print a list of -I include directives needed to use SWIG.
+
+=head2 --module_dir | -m
+
+Print the absolute base path of the SWIG modules directory.
+
+=head2 --cmdline | -c
+
+Print a full, working command line, with all -I paths included.
+
+=head2 --help | -h | -?
+
+Show a brief help message.
+
+=head1 SEE ALSO
+
+L<http://www.swig.org/> - SWIG, the Simplified Wrapper and Interface Generator
+
+The F<bin/> directory of this module's distribution
+
+=head1 AUTHORS
+
+Jason McManus, C<< <infidel at cpan.org> >>
+
+=head1 BUGS
+
+Please report any bugs or feature requests to
+C<bug-alien-swig at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Alien-SWIG>.  The authors will be notified, and then you'll
+automatically be notified of progress on your bug as changes are made.
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Alien:SWIG:
+
+You can also look for information at:
+
+=over 4
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Alien-SWIG>
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Alien-SWIG>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Alien-SWIG>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Alien-SWIG/>
+
+=back
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (c) 2010-2011 Jason McManus
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+
+=cut
+
+# END

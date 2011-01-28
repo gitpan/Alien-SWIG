@@ -1,0 +1,39 @@
+License and Copyright for Alien::SWIG
+-------------------------------------
+
+Copyright (c) 2010-2011 Jason McManus
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of either: the GNU General Public License as published
+by the Free Software Foundation; or the Artistic License.
+
+See http://dev.perl.org/licenses/ for more information.
+
+SWIG: The Simplified Wrapper and Interface Generator
+----------------------------------------------------
+
+SWIG carries its own separate license.
+
+SWIG is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. See the LICENSE-GPL file for
+the full terms of the GNU General Public license version 3.
+
+Portions of SWIG are also licensed under the terms of the licenses
+in the file LICENSE-UNIVERSITIES. You must observe the terms of
+these licenses, as well as the terms of the GNU General Public License,
+when you distribute SWIG.
+
+The SWIG library and examples, under the Lib and Examples top level
+directories, are distributed under the following terms:
+
+  You may copy, modify, distribute, and make derivative works based on
+  this software, in source code or object code form, without
+  restriction. If you distribute the software to others, you may do
+  so according to the terms of your choice. This software is offered as
+  is, without warranty of any kind.
+
+Please see the SWIG distribution itself for more detailed information.
+
+# END
