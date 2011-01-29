@@ -9,13 +9,13 @@ use Cwd;
 use Config ();
 use File::Spec::Functions qw( catdir catfile );
 use File::Copy qw( move );
-use File::Path qw( make_path );
+use File::Path;
 use base qw( Module::Build );
 use strict;
 use warnings;
 use vars qw( $VERSION );
 BEGIN {
-    $VERSION = '0.00_01';
+    $VERSION = '0.00_02';
 }
 
 my $SWIG             = 'swig';
@@ -108,8 +108,8 @@ sub fetch_swig {
             }
         }
     );
-    die sprintf( "\nUnable to fetch archive: %s %s\n",
-                 $response->{status}, $response->{reason} )
+    die sprintf( "\nUnable to fetch archive: %s %s; Content was:\n'%s'\n",
+                 $response->{status}, $response->{reason}, $response->{content})
         unless( $response->{success} );
 
     # Write it to disk
@@ -292,7 +292,7 @@ sub install_swig
     my $dest2 = catdir( $destbase, 'share' );
 
     # Finally, move the junk autoconf just misinstalled to its 2nd temp loc
-    make_path( $destbase );
+    mkpath( $destbase );
 #    move( $src1, $finaldest )
     rename( $src1, $dest1 )
         or die "\nTMPINST: Cannot move $src1 to $dest1: $!";
@@ -358,6 +358,8 @@ sub create_ver_file {
     return;
 }
 
+# XXX: See this post on the swig-user mailing list for why this is here:
+# https://sourceforge.net/mailarchive/forum.php?thread_name=4D444651.8050303%40fultondesigns.co.uk&forum_name=swig-user
 sub complain_about_disabled_languages_not_working
 {
     # Pffffft.

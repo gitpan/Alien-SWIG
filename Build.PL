@@ -101,4 +101,4 @@ sub check_args
     return $opts;
 }
 
-# END
+__END__

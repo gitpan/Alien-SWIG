@@ -4,8 +4,16 @@ Legend:
 BUG:    An actual found or reported bug fix.
 FIX:    Change toward correct behavior, but unreported.
 NEW:    New, previously non-existent feature.
+CHG:    Change in behavior.
+API:    Change in user-facing API (hopefully rare).
 DOC:    Changes to documentation.
 ------------------------------------------------------------
+
+0.00_02  2011-01-30     (developer release)
+         FIX: GCC 4.x warning about <math.h>/sqrt in t/swig/swigtest.c
+         FIX: File::Path < 2.06_05 didn't have make_path().
+         CHG: Make HTTP::Tiny report exceptions more verbosely.
+         DOC: Various minor changes after seeing it on CPAN
 
 0.00_01  2011-01-29     (developer release)
          Main module should be complete

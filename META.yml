@@ -17,9 +17,9 @@ name: Alien-SWIG
 provides:
   Alien::SWIG:
     file: lib/Alien/SWIG.pm
-    version: 0.00_01
+    version: 0.00_02
 requires:
   perl: v5.6.0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.00_01
+version: 0.00_02

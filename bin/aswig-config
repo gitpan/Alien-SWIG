@@ -21,7 +21,7 @@ use Alien::SWIG;
 
 use vars qw( $VERSION $TRUE $FALSE $PROGNAME $PROGDESC );
 BEGIN {
-	$VERSION = '0.00_01';
+	$VERSION = '0.00_02';
 }
 
 *TRUE      = \1;
@@ -212,6 +212,8 @@ Show a brief help message.
 =head1 SEE ALSO
 
 L<http://www.swig.org/> - SWIG, the Simplified Wrapper and Interface Generator
+
+L<http://swig.org/doc.html> - The SWIG Documentation
 
 The F<bin/> directory of this module's distribution
 

@@ -23,7 +23,7 @@ BEGIN {
     require Exporter;
     @ISA        = qw( Exporter );
     @EXPORT_OK  = qw( path version executable module_dir includes cmd_line );
-    $VERSION    = '0.00_01';
+    $VERSION    = '0.00_02';
 }
 
 *TRUE     = \1;
@@ -229,9 +229,15 @@ and provides accessor functions to describe its location, module paths, etc.
 This module comes distributed with and installs SWIG version B<2.0.1> by
 default, but you can specify a different version to build and install, and
 it will do its best to find, download, build, and install that version, as
-long as it's available in the SWIG SourceForge repository.
+long as it's available in the SWIG SourceForge repository at
+L<http://sourceforge.net/projects/swig/files/swig/>.
 
-To specify an alternate version, use the C<--swigver=X.X.X> argument, e.g.:
+Please see L<Alien> for an explanation of the Alien namespace.
+
+=head1 BUILD ARGUMENTS
+
+You can specify an alternate version of SWIG to build and install by using
+the C<--swigver=X.X.X> argument to C<Build.PL>, e.g.:
 
     perl Build.PL --swigver=1.3.40
     ./Build
@@ -243,8 +249,6 @@ This would download swig-1.3.40.tar.gz and build and install that, instead.
 This module has been tested with SWIG versions B<1.3.28 - 2.0.1>.  I don't
 think anything prior to that will work with it, due to the lack of typemaps
 before then.
-
-Please see L<Alien> for an explanation of the Alien namespace.
 
 =head1 CONSTRUCTOR
 
@@ -362,7 +366,7 @@ This module OPTIONALLY exports the following subs:
 
 L<http://www.swig.org/> - SWIG, the Simplified Wrapper and Interface Generator
 
-L<http://www.swig.org/Doc2.0/Contents.html> - The SWIG Documentation
+L<http://swig.org/doc.html> - The SWIG Documentation
 
 The F<bin/> directory of this module's distribution
 
@@ -375,6 +379,23 @@ Jason McManus, C<< <infidel at cpan.org> >>
 Many of the build scripts in this module were modelled on L<Alien::IE7>.
 
 =head1 BUGS
+
+=over 4
+
+=item * C<configure> in SWIG doesn't disable multiple language support.
+
+As of 2.0.1, and back as far as this module works with, the C<configure>
+script in all SWIG versions support C<--disable-LANG> options for all of
+the other languages, but they don't actually seem to disable the other
+languages, only the checks during C<make check>.  Not my fault.
+
+See this mailing list post if you'd like more information:
+L<https://sourceforge.net/mailarchive/forum.php?thread_name=4D444651.8050303%40fultondesigns.co.uk&forum_name=swig-user>
+
+This module already passes the options, so if it becomes possible at some
+point, it will work automagically.
+
+=back
 
 Please report any bugs or feature requests to
 C<bug-alien-swig at rt.cpan.org>, or through
