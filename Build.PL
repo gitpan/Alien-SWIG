@@ -4,8 +4,8 @@
 # Copyright (c) 2010-2011 Jason McManus
 #
 use Getopt::Long;
-use Config ();
 use ExtUtils::MakeMaker qw( prompt );   # Module::Build's prompt() sucks
+use File::Spec qw( catdir catfile );
 use strict;
 use warnings;
 use lib qw( inc lib );
@@ -16,7 +16,7 @@ use MY::Build;
 ###
 
 use vars qw( $VERSION $TRUE $FALSE );
-$VERSION = '0.00_03';
+$VERSION = '0.01';
 *TRUE    = \1;
 *FALSE   = \0;
 
@@ -210,22 +210,12 @@ sub check_for_pcre
     return( $pcre_config ? $TRUE : $FALSE );
 }
 
-# Parse the path separator out of the trash that Config.pm outputs
-sub get_path_sep
-{
-    my( $garbage ) = Config::config_re( qr/path_sep/ );
-
-    my( $path_sep ) = ( $garbage =~ m/path_sep\=\'(.*)\'/ );
-
-    return( $path_sep );
-}
-
 # Find the specified $fname in all dirs in $ENV{PATH}
 sub find_bin
 {
     my( $fname, @extra_paths ) = @_;
 
-    my $path_sep = get_path_sep() || ':';
+    my $path_sep = MY::Build->get_config_var( 'path_sep' ) || ':';
 
     my @bindirs = split( $path_sep, $ENV{PATH} );
     push( @bindirs, @extra_paths );
@@ -245,7 +235,11 @@ sub warn_if_unknown
 {
     my $ver = shift;
 
-    unless( MY::Build->is_known_ver( $ver ) )
+    if( MY::Build->is_known_ver( $ver ) )
+    {
+        printf "\nReconfiguring for SWIG version $ver...\n\n";
+    }
+    else
     {
         warn sprintf( "\nWarning: %s is not a known SWIG version." .
                      "  Known working versions are:\n\n",

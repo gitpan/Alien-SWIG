@@ -6,7 +6,7 @@ package MY::Build;
 #
 
 use Cwd;
-use Config ();
+use Config;
 use File::Spec::Functions qw( catdir catfile );
 use File::Copy qw( move );
 use File::Path;
@@ -16,7 +16,7 @@ use warnings;
 
 use vars qw( $VERSION $TRUE $FALSE );
 BEGIN {
-    $VERSION = '0.00_03';
+    $VERSION = '0.01';
 }
 *TRUE  = \1;
 *FALSE = \0;
@@ -92,8 +92,6 @@ sub swig_dir {
 }
 
 sub swig_target_dir {
-#    my $archname = get_config( 'archname' );
-#    return catdir( 'blib', 'arch', $archname, 'Alien', 'SWIG' );
     return catdir( 'blib', 'lib', 'Alien', 'SWIG', 'swig' );
 }
 
@@ -213,7 +211,7 @@ sub config_swig
     chdir( $bd ) or die "Cannot chdir to $bd: $!";
 
     # XXX: This probably won't work with mst's local::lib
-    my $sitelibexp = get_config( 'sitelibexp' );
+    my $sitelibexp = $self->get_config_var( 'sitelibexp' );
 
     my @cmd = (
         './configure',
@@ -306,7 +304,7 @@ sub tmp_install_swig {
     return if( -d catdir( $destbase, 'bin' ) and
                -d catdir( $destbase, 'share' ) );
     # 2. Next check if we ourselves are done.
-    my $sitelibexp = get_config( 'sitelibexp' );
+    my $sitelibexp = $self->get_config_var( 'sitelibexp' );
     my $aswig = catdir( 'tmpinst', $sitelibexp, 'Alien', 'SWIG' );
     return if(
              -d 'tmpinst' and
@@ -349,7 +347,7 @@ sub install_swig
     print 'TMPINST ' . $self->swig_plus_ver() . " rebase...\n";
 
     # Build some paths
-    my $sitelibexp = get_config( 'sitelibexp' );
+    my $sitelibexp = $self->get_config_var( 'sitelibexp' );
     my $srcbase    = catdir( 'tmpinst',
                                          $sitelibexp,
                                          'Alien',
@@ -404,14 +402,15 @@ sub my_system
     return( $rv >> 8 );
 }
 
-sub get_config {
-    my @junk = Config::config_re( $_[0] );
+# Retrieve a var from the ginormous %Config hash
+sub get_config_var
+{
+    shift;  # Get rid of class/$obj junk
+    my $var = shift;
 
-    return unless( scalar( @junk ) );
-
-    my $val = $junk[0];
-    $val =~ s/^.*?='(.*)'$/$1/;     # Config.pm is SO ANNOYING
-    return( $val );
+    return exists( $Config{$var} )
+             ? $Config{$var}
+             : undef;
 }
 
 sub create_ver_file {

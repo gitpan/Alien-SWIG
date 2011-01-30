@@ -20,7 +20,7 @@ use Alien::SWIG;
 
 use vars qw( $VERSION $TRUE $FALSE $PROGNAME $PROGDESC );
 BEGIN {
-	$VERSION = '0.00_03';
+	$VERSION = '0.01';
 }
 
 *TRUE      = \1;

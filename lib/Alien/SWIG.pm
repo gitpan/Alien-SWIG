@@ -7,9 +7,8 @@ package Alien::SWIG;
 #   Full POD documentation after __END__
 #
 
-use File::Spec;
+use File::Spec::Functions qw( catdir catfile );
 use Carp qw( croak confess );
-use Config ();
 use strict;
 use warnings;
 
@@ -23,7 +22,7 @@ BEGIN {
     require Exporter;
     @ISA        = qw( Exporter );
     @EXPORT_OK  = qw( path version executable module_dir includes cmd_line );
-    $VERSION    = '0.00_03';
+    $VERSION    = '0.01';
 }
 
 *TRUE     = \1;
@@ -33,9 +32,9 @@ my $SWIG_VERFILE     = 'swig-version.txt';
 my $SWIG_BINARY      = 'swig';
 
 # Global cache; either points to object ref, or just used as is.
-# XXX: This will explode upon multiple Alien::SWIG objects being created,
+# XXX: This may explode upon multiple Alien::SWIG objects being created,
 # but we'll worry about that if anyone ever needs to actually do that.
-my $CACHE;
+our $CACHE = {};        # 'our' for testing
 
 ###
 ### Constructor
@@ -69,18 +68,17 @@ sub new
 sub path
 {
     return( $CACHE->{path} )
-        if( defined( $CACHE ) and exists( $CACHE->{path} ) );
+        if( exists( $CACHE->{path} ) );
 
-    my $path = $INC{"Alien/SWIG.pm"};
+    my $path = $INC{ catfile( 'Alien', 'SWIG.pm' ) };
     $path    =~ s{\.pm$}{};
-    $path    = File::Spec->catfile( $path, 'swig' );
+    $path    = catfile( $path, 'swig' );
 
     croak( "Path $path\n doesn't appear to contain the SWIG installation;" .
            " please re-install Alien::SWIG.\n " )
-        unless( -d $path and -r File::Spec->catfile( $path, $SWIG_VERFILE ) );
+        unless( -d $path and -r catfile( $path, $SWIG_VERFILE ) );
 
-    $CACHE->{path} = $path
-        if( defined( $CACHE ) );
+    $CACHE->{path} = $path;
 
     return( $path );
 }
@@ -88,9 +86,9 @@ sub path
 sub version
 {
     return( $CACHE->{version} )
-        if( defined( $CACHE ) and exists( $CACHE->{version} ) );
+        if( exists( $CACHE->{version} ) );
 
-    my $verfile = File::Spec->catfile( path(), $SWIG_VERFILE );
+    my $verfile = catfile( path(), $SWIG_VERFILE );
 
     open my $fd, '<', $verfile or
        croak( "Cannot read SWIG version file; please re-install Alien::SWIG.\n " );
@@ -101,8 +99,7 @@ sub version
     croak( "Could not read version number; please re-install Alien::SWIG.\n " )
         unless( defined( $version ) );
 
-    $CACHE->{version} = $version
-        if( defined( $CACHE ) );
+    $CACHE->{version} = $version;
 
     return( $version );
 }
@@ -111,19 +108,19 @@ sub includes
 {
     my @includes;
 
-    if( defined( $CACHE ) and exists( $CACHE->{includes} ) )
+    if( exists( $CACHE->{includes} ) )
     {
         @includes = @{ $CACHE->{includes} };
     }
     else
     {
-        my $base = File::Spec->catfile( path(), 'share', 'swig', version() );
+        my $base = catfile( path(), 'share', 'swig', version() );
 
         @includes = (
             $base,
-            File::Spec->catfile( $base, 'typemaps' ),
-            File::Spec->catfile( $base, 'std' ),
-            File::Spec->catfile( $base, 'perl5' ),
+            catfile( $base, 'typemaps' ),
+            catfile( $base, 'std' ),
+            catfile( $base, 'perl5' ),
         );
         for( @includes )
         {
@@ -133,8 +130,7 @@ sub includes
             $_ = '-I' . $_;             # modify inline
         }
 
-        $CACHE->{includes} = \@includes
-            if( defined( $CACHE ) );
+        $CACHE->{includes} = \@includes;
     }
 
     return( wantarray
@@ -145,15 +141,14 @@ sub includes
 sub executable
 {
     return( $CACHE->{executable} )
-        if( defined( $CACHE ) and exists( $CACHE->{executable} ) );
+        if( exists( $CACHE->{executable} ) );
 
-    my $bin = File::Spec->catfile( path(), 'bin', $SWIG_BINARY );
+    my $bin = catfile( path(), 'bin', $SWIG_BINARY );
 
     croak( "Cannot find or execute $bin; please re-install Alien::SWIG.\n " )
         unless( -x $bin );
 
-    $CACHE->{executable} = $bin
-        if( defined( $CACHE ) );
+    $CACHE->{executable} = $bin;
 
     return( $bin );
 }
@@ -161,15 +156,14 @@ sub executable
 sub module_dir 
 {
     return( $CACHE->{module_dir} )
-        if( defined( $CACHE ) and exists( $CACHE->{module_dir} ) );
+        if( exists( $CACHE->{module_dir} ) );
 
-    my $base = File::Spec->catfile( path(), 'share', 'swig', version() );
+    my $base = catfile( path(), 'share', 'swig', version() );
 
     croak( "Module dir $base does not exist; please re-install Alien::SWIG.\n ")
         unless( -d $base );
 
-    $CACHE->{module_dir} = $base
-        if( defined( $CACHE ) );
+    $CACHE->{module_dir} = $base;
 
     return( $base );
 }
@@ -177,24 +171,6 @@ sub module_dir
 sub cmd_line
 {
     return( join( ' ', executable(), includes() ) );
-}
-
-
-###
-### "Private" methods
-###
-
-sub _get_config {
-    my( $self, $config_item ) = ( shift, shift );
-
-    my @garbage = Config::config_re( $config_item );
-
-    return unless( scalar( @garbage ) );
-
-    my $val = $garbage[0];
-    $val =~ s/^.*?='(.*)'$/$1/;     # Config.pm is SO ANNOYING
-
-    return( $val );
 }
 
 1;

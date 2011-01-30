@@ -7,8 +7,7 @@
 
 use Data::Dumper;
 use File::Spec::Functions qw( catdir catfile );
-use Test::More tests => 15;
-use Config ();
+use Test::More tests => 31;
 use strict;
 use warnings;
 
@@ -18,7 +17,7 @@ use warnings;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.00_03';
+    $VERSION = '0.01';
 }
 
 *TRUE      = \1;
@@ -32,47 +31,36 @@ my $obj;
 
 # Uncomment for use tests
 BEGIN {
-    use_ok( 'Alien::SWIG' ) or print "Bail out!";
+    use_ok(
+        'Alien::SWIG',
+        qw( version path executable module_dir includes cmd_line ),
+    ) or print "Bail out!";
 }
 
 ################################################################
-# Test: Can instantiate object
+# Test: Functional interface works, and caches properly.
 # Expected: PASS
-isa_ok( $obj = Alien::SWIG->new(), 'Alien::SWIG' );
-
-
-################################################################
-# Test: Object set SWIG_LIB envvar and cached module_dir
-# Expected: PASS
-isnt( $obj->{module_dir}, undef, 'module_dir cached' );
-isnt( $ENV{SWIG_LIB},     undef, 'ENV{SWIG_LIB} is set' );
-
-################################################################
-# Test: Test all methods
-# Expected: PASS
+is_deeply( $Alien::SWIG::CACHE, {}, 'Alien::SWIG::Cache empty' );
 
 # Set up some junk
-my $alien_swig_path = $INC{"Alien/SWIG.pm"};
+my $alien_swig_path = $INC{ catfile( 'Alien', 'SWIG.pm' ) };
 $alien_swig_path    =~ s{\.pm$}{};
 my $swigbase        = catdir( $alien_swig_path, 'swig' );
 
 # Test version()
 my $version = get_version( $swigbase );
-is( $obj->version(), $version, 'version()' );
+is( version(), $version,                        'version()' );
 
 # Test path()
-is( $obj->path(), $swigbase,    'path()' );
+is( path(), $swigbase,                          'path()' );
 
 # Test executable()
 my $bin = File::Spec->catfile( $swigbase, 'bin', 'swig' );
-is( $obj->executable(), $bin,    'executable()' );
+is( executable(), $bin,                         'executable()' );
 
-# Test module_dir()
+# Text module_dir();
 my $mod_dir = catdir( $swigbase, 'share', 'swig', $version );
-is( $obj->module_dir(), $mod_dir, 'module_dir()' );
-
-# Test: Check the actual value of SWIG_LIB var
-is( $ENV{SWIG_LIB}, $mod_dir, 'ENV{SWIG_LIB} is correct' );
+is( module_dir(), $mod_dir,                     'module_dir()' );
 
 # Test includes()
 my @incs = (
@@ -82,17 +70,68 @@ my @incs = (
     catdir( $mod_dir, 'perl5' ),
 );
 @incs = map { '-I' . $_ } @incs;
-is_deeply( [ $obj->includes() ], \@incs, 'includes()' );
+my $incs = join( ' ', @incs );
+is_deeply( [ includes() ],  \@incs,             'includes() array' );
+is( includes(),             $incs,              'includes() scalar' );
 
 # Test cmd_line()
 my $cmdline = catfile( $swigbase, 'bin', 'swig' ) . ' ' . join( ' ', @incs );
-is( $obj->cmd_line(), $cmdline, 'cmd_line()' );
+is( cmd_line(),             $cmdline,           'cmd_line()' );
+
+# Test cache
+is( $Alien::SWIG::CACHE->{'path'},       $swigbase,   'cache: path' );
+is( $Alien::SWIG::CACHE->{'executable'}, $bin,        'cache: executable' );
+is( $Alien::SWIG::CACHE->{'module_dir'}, $mod_dir,    'cache: module_dir' );
+is( $Alien::SWIG::CACHE->{'version'},    $version,    'cache: version' );
+is_deeply( $Alien::SWIG::CACHE->{'includes'}, \@incs, 'cache: includes' );
+
+# Empty cache and test again
+$Alien::SWIG::CACHE = {};
+is_deeply( $Alien::SWIG::CACHE, {}, 'cache emptied' );
+
+################################################################
+# Test: Can instantiate object
+# Expected: PASS
+isa_ok( $obj = Alien::SWIG->new(),          'Alien::SWIG' );
+
+################################################################
+# Test: Object set SWIG_LIB envvar and cached module_dir
+# Expected: PASS
+isnt( $obj->{module_dir}, undef,            'module_dir cached' );
+isnt( $ENV{SWIG_LIB},     undef,            'ENV{SWIG_LIB} is set' );
+
+################################################################
+# Test: Test all methods
+# Expected: PASS
+
+# Test $obj->version()
+is( $obj->version(), $version,              '$obj->version()' );
+
+# Test $obj->path()
+is( $obj->path(), $swigbase,                '$obj->path()' );
+
+# Test $obj->executable()
+is( $obj->executable(), $bin,               '$obj->executable()' );
+
+# Test $obj->module_dir()
+is( $obj->module_dir(), $mod_dir,           '$obj->module_dir()' );
+
+# Test $obj->includes()
+is_deeply( [ $obj->includes() ], \@incs,    '$obj->includes() array' );
+is( $obj->includes(),        $incs,         '$obj->includes() scalar' );
+
+# Test $obj->cmd_line()
+is( $obj->cmd_line(), $cmdline,             '$obj->cmd_line()' );
 
 # Reach inside the object and make sure everything's cached correctly
-is( $obj->{path},            $swigbase, 'path cache correct' );
-is( $obj->{executable},      $bin,      'executable cache correct' );
-is( $obj->{module_dir},      $mod_dir,  'module_dir cache correct' );
-is_deeply( $obj->{includes}, \@incs,    'includes cache correct' );
+is( $obj->{path},            $swigbase,     '$obj cache: path' );
+is( $obj->{executable},      $bin,          '$obj cache: executable' );
+is( $obj->{module_dir},      $mod_dir,      '$obj cache: module_dir' );
+is( $obj->{version},         $version,      '$obj cache: version' );
+is_deeply( $obj->{includes}, \@incs,        '$obj cache: includes' );
+
+# Test: Check the actual value of SWIG_LIB var, now that we can
+is( $ENV{SWIG_LIB}, $mod_dir,               'ENV{SWIG_LIB} is correct' );
 
 # Always return true
 1;
@@ -101,24 +140,14 @@ is_deeply( $obj->{includes}, \@incs,    'includes cache correct' );
 ### Utility subs
 ###
 
-sub get_config {
-    my @junk = Config::config_re( $_[0] );
-
-    return unless( scalar( @junk ) );
-
-    my $val = $junk[0];
-    $val =~ s/^.*?='(.*)'$/$1/;     # Config.pm is SO ANNOYING
-    return( $val );
-}
-
 sub get_version {
     my $path = shift;
 
     my $verfile = catfile( $path, 'swig-version.txt' );
     open my $fd, '<', $verfile or print "Bail out!", die;
     my $version = <$fd>;
-    chomp $version;
     close( $fd );
+    chomp $version;
 
     return( $version );
 }

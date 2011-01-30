@@ -9,6 +9,15 @@ API:    Change in user-facing API (hopefully rare).
 DOC:    Changes to documentation.
 ------------------------------------------------------------
 
+0.01     2011-01-31
+         First production release, think all the bugs are out (heh!)
+         FIX: Fixed Config.pm handling, was causing failed tests
+         FIX: %INC handling more portable
+         FIX: Caching wasn't working properly; fixed.
+         NEW: Functional interface tests for optional exports
+         FIX: Properly imported File::Spec::Functions qw(catdir catfile)
+         FIX: 5.6.x can't use scalarrefs; 1 test did that; fixed.
+
 0.00_03  2011-01-30     (developer release)
          FIX: Get rid of Pod::Usage dep; 1.36 fmt chg caused failed tests
          FIX: Add checks for PCRE, and pass related args to SWIG's configure

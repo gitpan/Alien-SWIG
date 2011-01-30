@@ -6,9 +6,8 @@
 #
 
 use Data::Dumper;
-use File::Spec::Functions qw( catdir catfile rel2abs );
-use Test::More tests => 64;
-use Config ();
+use File::Spec::Functions qw( catdir catfile );
+use Test::More tests => 50;
 use FindBin;
 use Cwd qw( abs_path );
 use strict;
@@ -23,7 +22,7 @@ use Alien::SWIG;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.00_03';
+    $VERSION = '0.01';
 }
 
 *TRUE      = \1;
@@ -53,8 +52,7 @@ like( $text, qr/Usage:/m, "$PROGNAME no args shows usage" );
 
 ### Test invalid arg
 eval {
-    close(STDERR);
-    open(STDERR, '>', \$stderr);
+    close(STDERR);  # ignore complaints from Getopt::Long
     ( $text, $rv ) = call_prog( $prog, '--hovercraft' );
 };
 is( $@, '', "$PROGNAME invalid args runs" );
@@ -62,7 +60,7 @@ is( $rv, 3, "$PROGNAME invalid args exitcode 3" );
 like( $text, qr/Usage:/m, "$PROGNAME invalid args shows usage" );
 
 ### Test --help
-for( qw( -h -? --help --? ) )
+for( qw( -? --help ) )
 {
     ( $text, $rv ) = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 2" );
@@ -70,13 +68,13 @@ for( qw( -h -? --help --? ) )
 }
 
 # Set up some junk
-my $alien_swig_path = $INC{"Alien/SWIG.pm"};
+my $alien_swig_path = $INC{ catfile( 'Alien', 'SWIG.pm' ) };
 $alien_swig_path    =~ s{\.pm$}{};
 my $swigbase        = catdir( $alien_swig_path, 'swig' );
 my $version         = get_version( $swigbase );
 
 #### Test version()
-for( qw( -v --ver --version --swig_version --swigver ) )
+for( qw( --version --swig_version --swigver -v ) )
 {
     ( $text, $rv )      = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 0" );
@@ -84,7 +82,7 @@ for( qw( -v --ver --version --swig_version --swigver ) )
 }
 
 # Test path()
-for( qw( -p --path --pa ) )
+for( qw( --path -p ) )
 {
     ( $text, $rv )      = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 0" );
@@ -92,8 +90,8 @@ for( qw( -p --path --pa ) )
 }
 
 # Test executable()
-my $bin = File::Spec->catfile( $swigbase, 'bin', 'swig' );
-for( qw( -x -e --exec --executable ) )
+my $bin = catfile( $swigbase, 'bin', 'swig' );
+for( qw( --executable -x -e ) )
 {
     ( $text, $rv )      = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 0" );
@@ -102,7 +100,7 @@ for( qw( -x -e --exec --executable ) )
 
 # Test module_dir()
 my $mod_dir = catdir( $swigbase, 'share', 'swig', $version );
-for( qw( -m --mod --module_dir --moduledir --moddir --mods ) )
+for( qw( --module_dir -m --moduledir --moddir --mods ) )
 {
     ( $text, $rv )      = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 0" );
@@ -118,7 +116,7 @@ my @incs = (
 );
 @incs = map { '-I' . $_ } @incs;
 my $incs = ' ' . join( ' ', @incs ) . ' ';
-for( qw( -i --inc --includes --incs ) )
+for( qw( --includes -i --incs ) )
 {
     ( $text, $rv )      = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 0" );
@@ -127,7 +125,7 @@ for( qw( -i --inc --includes --incs ) )
 
 # Test cmd_line()
 my $cmdline = catfile( $swigbase, 'bin', 'swig' ) . ' ' . join( ' ', @incs );
-for( qw( -c --cmdline --cmd_line ) )
+for( qw( --cmdline -c --cmd_line ) )
 {
     ( $text, $rv )      = call_prog( $prog, $_ );
     is( $rv, 0, "$PROGNAME $_ exitcode 0" );
@@ -141,16 +139,6 @@ for( qw( -c --cmdline --cmd_line ) )
 ###
 ### Utility subs
 ###
-
-sub get_config {
-    my @junk = Config::config_re( $_[0] );
-
-    return unless( scalar( @junk ) );
-
-    my $val = $junk[0];
-    $val =~ s/^.*?='(.*)'$/$1/;     # Config.pm is SO ANNOYING
-    return( $val );
-}
 
 sub get_version {
     my $path = shift;

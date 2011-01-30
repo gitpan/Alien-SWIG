@@ -9,7 +9,7 @@ use Data::Dumper;
 use File::Spec::Functions qw( catdir catfile rel2abs );
 use Test::More tests => 17;
 use ExtUtils::Embed ();
-use Config ();
+use Config;
 use FindBin;
 use Cwd qw( abs_path getcwd );
 use strict;
@@ -25,7 +25,7 @@ use Alien::SWIG;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.00_03';
+    $VERSION = '0.01';
 }
 
 *TRUE      = \1;
@@ -72,14 +72,14 @@ is( $rv, 0, "swig -perl5 $interface rv 0" );
 is( $text, '', "swig -perl5 $interface no errors" );
 
 # Grab some compiler junk from perl
-my $cc         = get_config( 'cc' );
+my $cc         = get_config_var( 'cc' );
 my $ccopts     = ExtUtils::Embed::ccopts();
-my $cccdlflags = get_config( 'cccdlflags' );
+my $cccdlflags = get_config_var( 'cccdlflags' );
 
-my $ld         = get_config( 'ld' ) || $cc;
-my $lddlflags  = get_config( 'lddlflags' );
-my $ccdlflags  = get_config( 'ccdlflags' );
-my $dlext      = get_config( 'dlext' );
+my $ld         = get_config_var( 'ld' ) || $cc;
+my $lddlflags  = get_config_var( 'lddlflags' );
+my $ccdlflags  = get_config_var( 'ccdlflags' );
+my $dlext      = get_config_var( 'dlext' );
 
 #############################################################################
 # A brief interlude while we attempt to compile and link the SWIG interface
@@ -144,17 +144,17 @@ chdir( $origdir );
 ### Utility subs
 ###
 
-sub get_config {
-    my @junk = Config::config_re( $_[0] );
+sub get_config_var
+{
+    my $var = shift;
 
-    return unless( scalar( @junk ) );
-
-    my $val = $junk[0];
-    $val =~ s/^.*?='(.*)'$/$1/;     # Config.pm is SO ANNOYING
-    return( $val );
+    return exists( $Config{$var} )
+             ? $Config{$var}
+             : undef;
 }
 
-sub get_version {
+sub get_version
+{
     my $path = shift;
 
     my $verfile = catfile( $path, 'swig-version.txt' );
