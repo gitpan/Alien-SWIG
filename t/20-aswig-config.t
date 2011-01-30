@@ -7,7 +7,7 @@
 
 use Data::Dumper;
 use File::Spec::Functions qw( catdir catfile rel2abs );
-use Test::More tests => 61;
+use Test::More tests => 64;
 use Config ();
 use FindBin;
 use Cwd qw( abs_path );
@@ -23,14 +23,14 @@ use Alien::SWIG;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.00_02';
+    $VERSION = '0.00_03';
 }
 
 *TRUE      = \1;
 *FALSE     = \0;
 
 my $PROGNAME = 'aswig-config';
-my( $prog, $text, $rv );
+my( $prog, $text, $rv, $stderr );
 
 ###
 ### Tests
@@ -50,6 +50,16 @@ ok( -x $prog, "$prog is executable" );
 ( $text, $rv ) = call_prog( $prog );
 is( $rv, 2, "$PROGNAME no args exitcode 2" );
 like( $text, qr/Usage:/m, "$PROGNAME no args shows usage" );
+
+### Test invalid arg
+eval {
+    close(STDERR);
+    open(STDERR, '>', \$stderr);
+    ( $text, $rv ) = call_prog( $prog, '--hovercraft' );
+};
+is( $@, '', "$PROGNAME invalid args runs" );
+is( $rv, 3, "$PROGNAME invalid args exitcode 3" );
+like( $text, qr/Usage:/m, "$PROGNAME invalid args shows usage" );
 
 ### Test --help
 for( qw( -h -? --help --? ) )

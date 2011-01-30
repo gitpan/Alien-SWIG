@@ -9,6 +9,11 @@ API:    Change in user-facing API (hopefully rare).
 DOC:    Changes to documentation.
 ------------------------------------------------------------
 
+0.00_03  2011-01-30     (developer release)
+         FIX: Get rid of Pod::Usage dep; 1.36 fmt chg caused failed tests
+         FIX: Add checks for PCRE, and pass related args to SWIG's configure
+         FIX: inc/MY/Build.pm:my_system() wasn't die()ing on rv > 0
+
 0.00_02  2011-01-30     (developer release)
          FIX: GCC 4.x warning about <math.h>/sqrt in t/swig/swigtest.c
          FIX: File::Path < 2.06_05 didn't have make_path().

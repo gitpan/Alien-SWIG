@@ -4,6 +4,8 @@ author:
   - 'Jason McManus <infidel AT cpan.org>'
 build_requires:
   Archive::Extract: 0
+  ExtUtils::MakeMaker: 0
+  Getopt::Long: 0
   HTTP::Tiny: 0
   Test::More: 0
 configure_requires:
@@ -17,9 +19,9 @@ name: Alien-SWIG
 provides:
   Alien::SWIG:
     file: lib/Alien/SWIG.pm
-    version: 0.00_02
+    version: 0.00_03
 requires:
   perl: v5.6.0
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.00_02
+version: 0.00_03

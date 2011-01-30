@@ -13,13 +13,40 @@ use File::Path;
 use base qw( Module::Build );
 use strict;
 use warnings;
-use vars qw( $VERSION );
+
+use vars qw( $VERSION $TRUE $FALSE );
 BEGIN {
-    $VERSION = '0.00_02';
+    $VERSION = '0.00_03';
 }
+*TRUE  = \1;
+*FALSE = \0;
+
+#########################################################################
+### Variables
+#########################################################################
 
 my $SWIG             = 'swig';
 my $DEF_SWIG_VERSION = '2.0.1';
+
+my @known_vers = qw(
+    1.3.28  1.3.29  1.3.30  1.3.31  1.3.32  1.3.33  1.3.34  1.3.35
+    1.3.36  1.3.37  1.3.38  1.3.39  1.3.40  2.0.0   2.0.1
+);
+my %known_vers = ();    # mapped on demand
+
+#########################################################################
+### Methods
+#########################################################################
+
+# XXX: There's supposed to be accessors, but docs are unclear and tests failed
+sub get_mb_property
+{
+    my( $self, $prop_name ) = ( shift, shift );
+
+    return( exists( $self->{'properties'}->{$prop_name} )
+              ? $self->{'properties'}->{$prop_name}
+              : undef );
+}
 
 sub ACTION_code {
     my $self = shift;
@@ -27,7 +54,6 @@ sub ACTION_code {
     $|=1;
 
     # See if we passed a different SWIG ver in during Build script creation
-    # XXX: I think there's supposed to be accessors, but docs are unclear.
     $self->{'properties'}->{'swig_version'} = $DEF_SWIG_VERSION
         unless( exists( $self->{'properties'}->{'swig_version'} ) );
 
@@ -47,8 +73,7 @@ sub def_swig_ver {
 sub swig_ver {
     my $self = shift;
 
-    # XXX: I think there's supposed to be accessors, but docs are unclear.
-    return $self->{'properties'}->{'swig_version'};     # Will this work?
+    return $self->get_mb_property( 'swig_version' );
 }
 
 sub swig_plus_ver {
@@ -108,9 +133,35 @@ sub fetch_swig {
             }
         }
     );
-    die sprintf( "\nUnable to fetch archive: %s %s; Content was:\n'%s'\n",
-                 $response->{status}, $response->{reason}, $response->{content})
-        unless( $response->{success} );
+
+    unless( $response->{success} )
+    {
+        warn sprintf( "\nUnable to fetch archive: %s %s; Content was%s\n",
+                      $response->{status}, $response->{reason},
+                      ( exists( $response->{content} ) and
+                        defined( $response->{content} ) and
+                        length( $response->{content} ) )
+                          ? ":\n'" . $response->{content} . "'\n"
+                          : " empty.\n" );
+        warn sprintf( <<'MOCK_THE_USER',
+You specified SWIG version '%s', which is not a known working version.
+
+I always tell 'em, like my great-grandfather used to say, "Choose a known
+working SWIG version, or suffer the consequences!"  But do they LISTEN?
+NO, OF COURSE NOT!  Now see what happens?!?
+
+Maybe you should try one of these:
+
+%s
+
+MOCK_THE_USER
+                      # continuation of sprintf args
+                      $self->get_mb_property( 'swig_version' ),
+                      $self->formatted_known_vers )
+            unless( $self->is_known_ver( $self->swig_ver() ) );
+        die '';
+    }
+
 
     # Write it to disk
     open my $fd, '>', $self->swig_archive()
@@ -192,6 +243,23 @@ sub config_swig
 # Disable until cpantesters reports come back
 #        '--without-maximum-compile-warnings',
     );
+
+    # Check for --without-pcre
+    if( $self->get_mb_property( 'without-pcre' ) )
+    {
+        push( @cmd, '--without-pcre' );
+    }
+    # Check for --with-pcre-[exec-]prefix
+    elsif( $self->get_mb_property( 'with-pcre-prefix' ) or
+           $self->get_mb_property( 'with-pcre-exec-prefix' ) )
+    {
+        push( @cmd, '--with-pcre-prefix=' .
+                    $self->get_mb_property( 'with-pcre-prefix' ) )
+            if( $self->get_mb_property( 'with-pcre-prefix' ) );
+        push( @cmd, '--with-pcre-exec-prefix=' .
+                    $self->get_mb_property( 'with-pcre-exec-prefix' ) )
+            if( $self->get_mb_property( 'with-pcre-exec-prefix' ) );
+    }
 
     # ./configure
     $self->complain_about_disabled_languages_not_working();
@@ -316,22 +384,24 @@ sub my_system
 
     print "SYSTEM: cmd '@_'\n";
     system( @_ );
+    my $rv = $?;
 
-    if ($? == -1) {
-        die "SYSTEM: cmd '@_': failed to execute: $!\n";
+    if ($rv == -1) {
+        die "SYSTEM: cmd '@_': failed to execute: '$!'\n";
     }
-    elsif ($? & 127) {
-        die sprintf "SYSTEM: cmd '@_': died with signal %d, %s coredump\n",
-                    ($? & 127),
-                    ($? & 128) ? 'with' : 'without';
+    elsif ($rv & 127) {
+        die sprintf( "SYSTEM: cmd '@_': died with signal %d, %s coredump\n",
+                     ( $rv & 127 ),
+                     ( $rv & 128 ) ? 'with' : 'without' );
+    }
+    elsif( ( $rv >> 8 ) > 0 ) {
+        die sprintf( "SYSTEM: cmd '%s': FAIL (rv %d)\n", $_[0], $rv >> 8 );
     }
     else {
-        printf "SYSTEM: cmd '%s': OK (rv %d)\n",
-               $_[0],
-               $? >> 8;
+        printf( "SYSTEM: cmd '%s': OK (rv %d)\n", $_[0], $rv >> 8 );
     }
 
-    return;
+    return( $rv >> 8 );
 }
 
 sub get_config {
@@ -369,6 +439,46 @@ sub complain_about_disabled_languages_not_working
     print "*"x75, "\n";
 
     return;
+}
+
+#
+# These are used in Build.PL
+#
+
+sub is_known_ver
+{
+    shift;  # ignore first arg, class method
+    my $ver = shift;
+    return $FALSE unless( defined( $ver ) );
+
+    # map and cache
+    %known_vers = map { $_ => 1 } @known_vers
+        unless( keys( %known_vers ) );
+
+    return( exists( $known_vers{$ver} ) ? $TRUE : $FALSE );
+}
+
+sub known_vers
+{
+    return( @known_vers );
+}
+
+sub formatted_known_vers
+{
+    my $s = '';
+    my $c = 0;
+    for my $v ( MY::Build->known_vers() )
+    {
+        $s .= '  ' unless( $c % 9 );
+        $s .= sprintf "%-8s", $v;
+        $s .= "\n" unless( ++$c % 9 );
+    }
+    return( $s );
+}
+
+sub random_ver
+{
+    return( $known_vers[rand @known_vers] );
 }
 
 1;

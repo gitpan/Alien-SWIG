@@ -23,7 +23,7 @@ BEGIN {
     require Exporter;
     @ISA        = qw( Exporter );
     @EXPORT_OK  = qw( path version executable module_dir includes cmd_line );
-    $VERSION    = '0.00_02';
+    $VERSION    = '0.00_03';
 }
 
 *TRUE     = \1;
@@ -236,6 +236,13 @@ Please see L<Alien> for an explanation of the Alien namespace.
 
 =head1 BUILD ARGUMENTS
 
+Alien::SWIG has a few build arguments for customizing the build process.
+These are all passed as C<perl Build.PL [[ARG] [ARG ...]>.
+
+=over 4
+
+=item C<--swigver=VERNUM>
+
 You can specify an alternate version of SWIG to build and install by using
 the C<--swigver=X.X.X> argument to C<Build.PL>, e.g.:
 
@@ -249,6 +256,38 @@ This would download swig-1.3.40.tar.gz and build and install that, instead.
 This module has been tested with SWIG versions B<1.3.28 - 2.0.1>.  I don't
 think anything prior to that will work with it, due to the lack of typemaps
 before then.
+
+=item C<--with-pcre-prefix=PATH>
+
+=item C<--with-pcre-exec-prefix=PATH>
+
+    perl Build.PL --with-pcre-prefix=/opt/pcre --with-pcre-exec-prefix=/opt/pcre
+
+These are passed directly to SWIG's C<configure> script, and are only
+needed if PCRE (the "Perl-Compatible" Regular Expression library) is
+installed in a non-standard location (i.e. the C<pcre-config> program
+is not in your C<PATH>).
+
+PCRE is I<not> needed for this Perl module's functionality, but SWIG uses it
+for its source code parser and preprocessor.
+
+It is recommended that you have it installed, or the version of SWIG built
+by this module may have reduced functionality or performance.
+
+It can be found at L<http://www.pcre.org>, or probably in your distribution's
+package repository.
+
+=item C<--without-pcre>
+
+    perl Build.PL --without-pcre
+
+You can use this to disable PCRE from the outset.  Read the above for reasons
+why you shouldn't disable PCRE.
+
+This also disables the C<--with-pcre-prefix> and C<--with-pcre-exec-prefix>
+options.
+
+=back
 
 =head1 CONSTRUCTOR
 
@@ -366,7 +405,10 @@ This module OPTIONALLY exports the following subs:
 
 L<http://www.swig.org/> - SWIG, the Simplified Wrapper and Interface Generator
 
-L<http://swig.org/doc.html> - The SWIG Documentation
+L<http://www.swig.org/doc.html> - The SWIG Documentation
+
+L<http://www.pcre.org> - The "Perl-Compatible" Regular Expression library
+(only needed for SWIG; this module doesn't use it).
 
 The F<bin/> directory of this module's distribution
 

@@ -7,7 +7,6 @@
 #   Full POD documentation after __END__
 #
 
-use Pod::Usage; # From Perl >= 5.006
 use Getopt::Long;
 use strict;
 use warnings;
@@ -21,7 +20,7 @@ use Alien::SWIG;
 
 use vars qw( $VERSION $TRUE $FALSE $PROGNAME $PROGDESC );
 BEGIN {
-	$VERSION = '0.00_02';
+	$VERSION = '0.00_03';
 }
 
 *TRUE      = \1;
@@ -32,47 +31,48 @@ $PROGDESC  = 'Dump config information about the Alien::SWIG install';
 $|=1;
 
 # Argument tree
+my @args = qw( path version executable includes module_dir cmd_line help );
 my %args = (
     help    =>
     {
         optspec     => 'help|?',
-        desc        => 'Display this help message',
+        desc        => 'Display this help message.',
         required    => $FALSE,
     },
     path =>
     {
         optspec     => 'path',
-        desc        => 'Print the absolute base path of the SWIG installation',
+        desc        => 'Print the absolute base path of the SWIG installation.',
         required    => $FALSE,
     },
     version =>
     {
         optspec     => 'version|swig_version|swigversion',
-        desc        => 'Print the version of the installed copy of SWIG',
-        required    => $FALSE,
-    },
-    includes =>
-    {
-        optspec     => 'includes|incs',
-        desc        => 'Print a list of SWIG -I include directives',
+        desc        => 'Print the version of the installed copy of SWIG.',
         required    => $FALSE,
     },
     executable =>
     {
         optspec     => 'executable|x',
-        desc        => 'Print the absolute path to the SWIG executable',
+        desc        => 'Print the absolute path to the SWIG executable.',
+        required    => $FALSE,
+    },
+    includes =>
+    {
+        optspec     => 'includes|incs',
+        desc        => 'Print a list of SWIG -I include directives.',
         required    => $FALSE,
     },
     module_dir =>
     {
-        optspec     => 'module_dir|moduledir|moddir|mods',
-        desc        => 'Print the absolute of the SWIG module directory',
+        optspec     => 'moduledir|module_dir|moddir|mods',
+        desc        => 'Print the absolute path of the SWIG module directory.',
         required    => $FALSE,
     },
     cmd_line =>
     {
-        optspec     => 'cmd_line|cmdline|command',
-        desc        => 'Print a full, working command line for running SWIG',
+        optspec     => 'cmdline|cmd_line|command',
+        desc        => 'Print a full, working command line, with all -I paths included.',
         required    => $FALSE,
     },
 );
@@ -101,11 +101,11 @@ elsif( $opts->{includes} )
 {
     print ' ' . $swig->includes() . ' ';
 }
-elsif( $opts->{module_dir} )
+elsif( $opts->{moduledir} )
 {
     print $swig->module_dir();
 }
-elsif( $opts->{cmd_line} )
+elsif( $opts->{cmdline} )
 {
     print $swig->cmd_line();
 }
@@ -153,12 +153,26 @@ sub get_opts
     return( \%opt_retval );
 }
 
+# Get rid of Pod::Usage::pod2usage formatting dependency
 sub usage
 {
-    pod2usage( { -message => prog_header(),
-                 -exitval => defined( $_[0] ) ? $_[0] : 42,
-                 -verbose => 1,
-                 -output => \*STDOUT } );
+    my $exitval = defined( $_[0] ) ? $_[0] : 42;
+
+    print prog_header(), "\n";
+    print "Usage:\n\t\$ $PROGNAME [OPTION]\n\n";
+    print "Options:\n";
+
+    for( @args )
+    {
+        my @opts = split( /\|/, $args{$_}->{optspec} );
+        my( $single ) = grep { length( $_ ) == 1 } @opts;
+        $single = substr( $opts[0], 0, 1 )
+            unless( $single );
+        printf( "  --%s | -%s:\n    %s\n\n",
+                $opts[0], $single, $args{$_}->{desc} );
+    }
+
+    exit( $exitval );
 }
 
 __END__
@@ -183,11 +197,11 @@ Makefiles, shell scripts, etc.
 
 =head2 --path | -p
 
-Print the absolute base path of the SWIG directory.
+Print the absolute base path of the SWIG installation.
 
 =head2 --version | -v
 
-Print the version of the installed IB API (not this program).
+Print the version of the installed copy of SWIG (not this program).
 
 =head2 --executable | -x
 
