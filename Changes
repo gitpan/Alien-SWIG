@@ -9,6 +9,10 @@ API:    Change in user-facing API (hopefully rare).
 DOC:    Changes to documentation.
 ------------------------------------------------------------
 
+0.02     2011-01-31
+         FIX: PCRE detection intermittently failing; made even more explicit.
+         FIX: Decided not to support Win32.  Patches welcome.
+
 0.01     2011-01-31
          First production release, think all the bugs are out (heh!)
          FIX: Fixed Config.pm handling, was causing failed tests

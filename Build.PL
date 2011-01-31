@@ -1,8 +1,16 @@
 #
-# Alien::SWIG - Module::Build build script
+#   Alien::SWIG - Module::Build build script
 #
-# Copyright (c) 2010-2011 Jason McManus
+#   Copyright (c) 2010-2011 Jason McManus
 #
+
+BEGIN
+{
+    # I have no interest; the build facilities looked too tedious to bother.
+    die "No support for OS MSWin32.  Patches welcome."
+        if( $^O eq 'MSWin32' );
+}
+
 use Getopt::Long;
 use ExtUtils::MakeMaker qw( prompt );   # Module::Build's prompt() sucks
 use File::Spec qw( catdir catfile );
@@ -16,7 +24,7 @@ use MY::Build;
 ###
 
 use vars qw( $VERSION $TRUE $FALSE );
-$VERSION = '0.01';
+$VERSION = '0.02';
 *TRUE    = \1;
 *FALSE   = \0;
 
@@ -123,7 +131,8 @@ PCRENOTE
         my $resp = prompt( 'Do you wish to disable PCRE (not recommended) ?',
                            $default );
 
-        if( $resp =~ m/^\s*y/i )
+        # Had bug that looked fine in 0.01; just make it more explicit
+        if( $ENV{AUTOMATED_TESTING} or $resp =~ m/y/i ) 
         {
             $pcre_opts{'without-pcre'} = $TRUE
         }

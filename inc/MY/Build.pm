@@ -16,7 +16,7 @@ use warnings;
 
 use vars qw( $VERSION $TRUE $FALSE );
 BEGIN {
-    $VERSION = '0.01';
+    $VERSION = '0.02';
 }
 *TRUE  = \1;
 *FALSE = \0;
@@ -28,9 +28,11 @@ BEGIN {
 my $SWIG             = 'swig';
 my $DEF_SWIG_VERSION = '2.0.1';
 
+# Weighted list: 2.0.1 will be tested 1/3 of the time, ~4.762% for others
 my @known_vers = qw(
     1.3.28  1.3.29  1.3.30  1.3.31  1.3.32  1.3.33  1.3.34  1.3.35
-    1.3.36  1.3.37  1.3.38  1.3.39  1.3.40  2.0.0   2.0.1
+    1.3.36  1.3.37  1.3.38  1.3.39  1.3.40  2.0.0
+    2.0.1   2.0.1   2.0.1   2.0.1   2.0.1   2.0.1   2.0.1
 );
 my %known_vers = ();    # mapped on demand
 
@@ -135,12 +137,12 @@ sub fetch_swig {
     unless( $response->{success} )
     {
         warn sprintf( "\nUnable to fetch archive: %s %s; Content was%s\n",
-                      $response->{status}, $response->{reason},
-                      ( exists( $response->{content} ) and
-                        defined( $response->{content} ) and
-                        length( $response->{content} ) )
-                          ? ":\n'" . $response->{content} . "'\n"
-                          : " empty.\n" );
+               $response->{status}, $response->{reason},
+               ( exists( $response->{content} ) and
+                 defined( $response->{content} ) and
+                 length( $response->{content} ) )
+               ? ":\n'" . substr( $response->{content}, 0, 8*1024 ) . "'\n"
+               : " empty.\n" );
         warn sprintf( <<'MOCK_THE_USER',
 You specified SWIG version '%s', which is not a known working version.
 
@@ -427,14 +429,18 @@ sub create_ver_file {
     return;
 }
 
-# XXX: See this post on the swig-user mailing list for why this is here:
-# https://sourceforge.net/mailarchive/forum.php?thread_name=4D444651.8050303%40fultondesigns.co.uk&forum_name=swig-user
+# XXX: See these post on the swig-user mailing list for why this is here:
+# https://sourceforge.net/mailarchive/message.php?msg_id=26967542
+# https://sourceforge.net/mailarchive/message.php?msg_id=26978599
 sub complain_about_disabled_languages_not_working
 {
     # Pffffft.
     print "*"x75, "\n";
-    print "  The SWIG build process doesn't actually disable other language support.\n";
-    print "   These options are left in, hoping that someday it'll actually work.\n";
+    print "  The SWIG build process doesn't actually disable multi-language support.\n";
+    print "   These options are left in, hoping that someday it'll actually work.\n\n";
+    print "  More info:\n";
+    print "    https://sourceforge.net/mailarchive/message.php?msg_id=26967542\n";
+    print "    https://sourceforge.net/mailarchive/message.php?msg_id=26978599\n";
     print "*"x75, "\n";
 
     return;
@@ -444,15 +450,21 @@ sub complain_about_disabled_languages_not_working
 # These are used in Build.PL
 #
 
+sub cache_known_vers
+{
+    %known_vers = map { $_ => 1 } @known_vers
+        unless( keys( %known_vers ) );
+
+    return;
+}
+
 sub is_known_ver
 {
     shift;  # ignore first arg, class method
     my $ver = shift;
     return $FALSE unless( defined( $ver ) );
 
-    # map and cache
-    %known_vers = map { $_ => 1 } @known_vers
-        unless( keys( %known_vers ) );
+    cache_known_vers();
 
     return( exists( $known_vers{$ver} ) ? $TRUE : $FALSE );
 }
@@ -466,7 +478,8 @@ sub formatted_known_vers
 {
     my $s = '';
     my $c = 0;
-    for my $v ( MY::Build->known_vers() )
+    cache_known_vers();
+    for my $v ( sort keys( %known_vers ) )
     {
         $s .= '  ' unless( $c % 9 );
         $s .= sprintf "%-8s", $v;
