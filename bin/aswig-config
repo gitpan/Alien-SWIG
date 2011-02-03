@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!perl
 #
 #   Alien::SWIG - Command-line Alien::SWIG config-listing script
 #
@@ -20,7 +20,7 @@ use Alien::SWIG;
 
 use vars qw( $VERSION $TRUE $FALSE $PROGNAME $PROGDESC );
 BEGIN {
-	$VERSION = '0.02';
+	$VERSION = '0.02_01';
 }
 
 *TRUE      = \1;

@@ -22,7 +22,7 @@ BEGIN {
     require Exporter;
     @ISA        = qw( Exporter );
     @EXPORT_OK  = qw( path version executable module_dir includes cmd_line );
-    $VERSION    = '0.02';
+    $VERSION    = '0.02_01';
 }
 
 *TRUE     = \1;
@@ -117,10 +117,10 @@ sub includes
         my $base = catfile( path(), 'share', 'swig', version() );
 
         @includes = (
-            $base,
+            catfile( $base, 'perl5' ),
             catfile( $base, 'typemaps' ),
             catfile( $base, 'std' ),
-            catfile( $base, 'perl5' ),
+            $base,
         );
         for( @includes )
         {
@@ -248,7 +248,7 @@ PCRE is I<not> needed for this Perl module's functionality, but SWIG uses it
 for its source code parser and preprocessor.
 
 It is recommended that you have it installed, or the version of SWIG built
-by this module may have reduced functionality or performance.
+by this module will have no support for regular expressions.
 
 It can be found at L<http://www.pcre.org>, or probably in your distribution's
 package repository.
@@ -258,7 +258,7 @@ package repository.
     perl Build.PL --without-pcre
 
 You can use this to disable PCRE from the outset.  Read the above for reasons
-why you shouldn't disable PCRE.
+why you probably shouldn't disable PCRE.
 
 This also disables the C<--with-pcre-prefix> and C<--with-pcre-exec-prefix>
 options.
@@ -413,9 +413,34 @@ L<https://sourceforge.net/mailarchive/forum.php?thread_name=4D444651.8050303%40f
 This module already passes the options, so if it becomes possible at some
 point, it will work automagically.
 
+=item * SWIG 1.3.28 - 1.3.31 configure throws sed unterminated `s' command errors
+
+This happens due to the newish Racket Scheme being installed as 'mzscheme' in
+your path.  The old SWIG configure scripts between 1.3.28 - 1.3.31 called
+it with a now-nonexistent C<--mute-banner> option, in a way that makes
+Racket barf error messages that are then passed into another script, and
+ruins a few sed C<s///> replacements.
+
+Workarounds (I<only necessary for 1.3.28 - 1.3.31>):
+
+=over 4
+
+=item i. Use the C<--without-mzscheme> configure option (this is already done by default in this module).
+
+=item ii. Rename the C<mzscheme> program or otherwise remove it from your C<PATH>.
+
+=item iii. Choose a newer SWIG :-)
+
 =back
 
-Please report any bugs or feature requests to
+=item * Causes numerous compiler warnings on Irix with the MIPSpro C compiler.
+
+Yep.  This is part of the SWIG-generated interface code, and out of my hands.
+Feel free to send your log as a bug report to the SWIG maintainers.
+
+=back
+
+Please report other bugs or feature requests to
 C<bug-alien-swig at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Alien-SWIG>.  The authors will be notified, and then you'll
 automatically be notified of progress on your bug as changes are made.

@@ -10,13 +10,14 @@ use Config;
 use File::Spec::Functions qw( catdir catfile );
 use File::Copy qw( move );
 use File::Path;
+use ExtUtils::MakeMaker qw( prompt );   # Module::Build's prompt sucks
 use base qw( Module::Build );
 use strict;
 use warnings;
 
 use vars qw( $VERSION $TRUE $FALSE );
 BEGIN {
-    $VERSION = '0.02';
+    $VERSION = '0.02_01';
 }
 *TRUE  = \1;
 *FALSE = \0;
@@ -25,8 +26,11 @@ BEGIN {
 ### Variables
 #########################################################################
 
+our $DEF_SWIG_VERSION = '2.0.1';
+
 my $SWIG             = 'swig';
-my $DEF_SWIG_VERSION = '2.0.1';
+my $BASE_DL_URL      = 'http://downloads.sourceforge.net/swig/';
+my $SWIG_VER_FILE    = 'swig_build_version';
 
 # Weighted list: 2.0.1 will be tested 1/3 of the time, ~4.762% for others
 my @known_vers = qw(
@@ -55,12 +59,9 @@ sub ACTION_code {
     $self->SUPER::ACTION_code;
     $|=1;
 
-    # See if we passed a different SWIG ver in during Build script creation
-    $self->{'properties'}->{'swig_version'} = $DEF_SWIG_VERSION
-        unless( exists( $self->{'properties'}->{'swig_version'} ) );
-
     # Build the package
-    $self->fetch_swig();
+    $self->fetch_swig()
+        or $self->ask_to_try_again();
     $self->extract_swig();
     $self->config_swig();
     $self->build_swig();
@@ -75,7 +76,7 @@ sub def_swig_ver {
 sub swig_ver {
     my $self = shift;
 
-    return $self->get_mb_property( 'swig_version' );
+    return $self->read_swig_ver();
 }
 
 sub swig_plus_ver {
@@ -108,22 +109,45 @@ sub swig_ver_file {
 
 sub swig_url {
     my $self = shift;
-    return 'http://prdownloads.sourceforge.net/swig/'
-            . $self->swig_archive();
+    return $BASE_DL_URL . $self->swig_archive();
+}
+
+# I think some CPANTesters (wisely) filter net access during testing.
+sub ask_to_try_again
+{
+    my $self = shift;
+
+    if( $self->swig_ver() ne $self->def_swig_ver() )
+    {
+        my $ans = prompt( sprintf( "Trouble downloading SWIG v%s; install" .
+                                   " included %s version?",
+                                   $self->swig_ver(),
+                                   $self->def_swig_ver() ), 'yes' );
+        if( $ENV{AUTOMATED_TESTING} or $ans =~ m/y/i )
+        {
+            # Frobnicate the version file
+            $self->write_swig_ver_file( $self->def_swig_ver() );
+            print "\n";
+            return( $self->fetch_swig() );
+        }
+    }
+
+    die sprintf( "Couldn't download SWIG v%s; cannot continue.",
+                 $self->swig_ver() );
 }
 
 sub fetch_swig {
     my $self = shift;
 
     # make-like simple check to see if we're done already
-    return if( -f $self->swig_archive() );
+    return $TRUE if( -f $self->swig_archive() );
 
     print 'Local copy of ', $self->swig_archive(), " not found.\n";
     print 'GET ', $self->swig_url(), '... ';
 
     # Grab the file
     require HTTP::Tiny;
-    my $http = HTTP::Tiny->new();
+    my $http = HTTP::Tiny->new( timeout => 30 );
     my $response = $http->get(
         $self->swig_url(),
         {
@@ -136,13 +160,16 @@ sub fetch_swig {
 
     unless( $response->{success} )
     {
+        my $content = ( exists( $response->{content} ) and
+                        defined( $response->{content} ) and
+                        length( $response->{content} ) )
+                          ? substr( $response->{content}, 0, 8*1024 )
+                          : "empty";
+        chomp $content;
         warn sprintf( "\nUnable to fetch archive: %s %s; Content was%s\n",
                $response->{status}, $response->{reason},
-               ( exists( $response->{content} ) and
-                 defined( $response->{content} ) and
-                 length( $response->{content} ) )
-               ? ":\n'" . substr( $response->{content}, 0, 8*1024 ) . "'\n"
-               : " empty.\n" );
+               ":\n'" . $content . "'\n" );
+
         warn sprintf( <<'MOCK_THE_USER',
 You specified SWIG version '%s', which is not a known working version.
 
@@ -159,7 +186,7 @@ MOCK_THE_USER
                       $self->get_mb_property( 'swig_version' ),
                       $self->formatted_known_vers )
             unless( $self->is_known_ver( $self->swig_ver() ) );
-        die '';
+        return $FALSE;
     }
 
 
@@ -173,6 +200,8 @@ MOCK_THE_USER
     close( $fd );
 
     print "OK\n";
+
+    return $TRUE;
 }
 
 sub extract_swig {
@@ -395,7 +424,21 @@ sub my_system
                      ( $rv & 128 ) ? 'with' : 'without' );
     }
     elsif( ( $rv >> 8 ) > 0 ) {
-        die sprintf( "SYSTEM: cmd '%s': FAIL (rv %d)\n", $_[0], $rv >> 8 );
+        # XXX: Remove this after figuring out what's going on w/ Ticket #39 ?
+        if( $^O =~ /Solaris/i )
+        {
+            printf( "SYSTEM: cmd '%s': FAIL (rv %d)\n", $_[0], $rv >> 8 );
+            print "Solaris detected; dumping Makefile:\n-----------\n";
+            my $cwd = getcwd();
+            open my $fh, '<', 'Makefile' or die "Can't open $cwd/Makefile: $!";
+            print $_ while( <$fh> );
+            close( $fh );
+            die "\n----------\nCannot continue with broken Makefile.\n";
+        }
+        else
+        {
+            die sprintf( "SYSTEM: cmd '%s': FAIL (rv %d)\n", $_[0], $rv >> 8 );
+        }
     }
     else {
         printf( "SYSTEM: cmd '%s': OK (rv %d)\n", $_[0], $rv >> 8 );
@@ -491,6 +534,32 @@ sub formatted_known_vers
 sub random_ver
 {
     return( $known_vers[rand @known_vers] );
+}
+
+sub write_swig_ver_file
+{
+    shift;  # Get rid of class/object
+    my $ver = shift;
+    $ver = def_swig_ver() unless( defined( $ver ) );
+
+    open my $fh, '>', $SWIG_VER_FILE or return;
+    print $fh $ver;
+    close $fh;
+
+    return;
+}
+
+sub read_swig_ver
+{
+    open my $fh, '<', $SWIG_VER_FILE
+        or return def_swig_ver();
+
+    my $ver = <$fh>;
+    close( $fh );
+    chomp $ver;
+    $ver = def_swig_ver() unless( defined( $ver ) );
+
+    return $ver;
 }
 
 1;

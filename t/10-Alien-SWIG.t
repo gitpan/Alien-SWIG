@@ -17,7 +17,7 @@ use warnings;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.02';
+    $VERSION = '0.02_01';
 }
 
 *TRUE      = \1;
@@ -55,7 +55,7 @@ is( version(), $version,                        'version()' );
 is( path(), $swigbase,                          'path()' );
 
 # Test executable()
-my $bin = File::Spec->catfile( $swigbase, 'bin', 'swig' );
+my $bin = catfile( $swigbase, 'bin', 'swig' );
 is( executable(), $bin,                         'executable()' );
 
 # Text module_dir();
@@ -64,10 +64,10 @@ is( module_dir(), $mod_dir,                     'module_dir()' );
 
 # Test includes()
 my @incs = (
-    $mod_dir,
+    catdir( $mod_dir, 'perl5' ),
     catdir( $mod_dir, 'typemaps' ),
     catdir( $mod_dir, 'std' ),
-    catdir( $mod_dir, 'perl5' ),
+    $mod_dir,
 );
 @incs = map { '-I' . $_ } @incs;
 my $incs = join( ' ', @incs );

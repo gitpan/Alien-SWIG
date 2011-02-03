@@ -6,7 +6,7 @@
 #
 
 use Data::Dumper;
-use File::Spec::Functions qw( catdir catfile rel2abs );
+use File::Spec::Functions qw( catdir catfile );
 use Test::More tests => 17;
 use ExtUtils::Embed ();
 use Config;
@@ -25,7 +25,7 @@ use Alien::SWIG;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.02';
+    $VERSION = '0.02_01';
 }
 
 *TRUE      = \1;
@@ -170,8 +170,14 @@ sub call_prog
 {
     my $prog = shift;
 
-    my $value = qx( $prog @_ );
-    chomp $value if( defined( $value ) );
+    my $value;
+    # Use $Config{perlpath} to get their perl.  From aswig ticket #35
+    eval {
+        $value = qx( $prog @_ );
+    };
+    print "Exec error: '$prog @_': '$@'\nBail out!" and die
+        if( $@ );
+    chomp $value;
     my $rv = $?;
 
     return( $value, $rv >> 8 );

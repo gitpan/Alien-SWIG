@@ -10,6 +10,7 @@ use File::Spec::Functions qw( catdir catfile );
 use Test::More tests => 50;
 use FindBin;
 use Cwd qw( abs_path );
+use Config;
 use strict;
 use warnings;
 
@@ -22,7 +23,7 @@ use Alien::SWIG;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.02';
+    $VERSION = '0.02_01';
 }
 
 *TRUE      = \1;
@@ -38,7 +39,7 @@ my( $prog, $text, $rv, $stderr );
 ################################################################
 # Test: Can find script
 # Expected: PASS
-$prog = catfile( $FindBin::Bin, '..', 'bin', $PROGNAME );
+$prog = catfile( $FindBin::Bin, '..', 'blib', 'script', $PROGNAME );
 ok( -x $prog, "$prog is executable" );
 
 ################################################################
@@ -109,10 +110,10 @@ for( qw( --module_dir -m --moduledir --moddir --mods ) )
 
 # Test includes()
 my @incs = (
-    $mod_dir,
+    catdir( $mod_dir, 'perl5' ),
     catdir( $mod_dir, 'typemaps' ),
     catdir( $mod_dir, 'std' ),
-    catdir( $mod_dir, 'perl5' ),
+    $mod_dir,
 );
 @incs = map { '-I' . $_ } @incs;
 my $incs = ' ' . join( ' ', @incs ) . ' ';
@@ -156,7 +157,14 @@ sub call_prog
 {
     my $prog = shift;
 
-    my $value = qx( $prog @_ );
+    my $value;
+    # Use $Config{perlpath} to get their perl.  From aswig ticket #35
+    my $perl = $Config{perlpath};
+    eval {
+        $value = qx( $perl $prog @_ );
+    };
+    print "Exec error: '$perl $prog @_': '$@'\nBail out!" and die
+        if( $@ );
     chomp $value;
     my $rv = $?;
 
