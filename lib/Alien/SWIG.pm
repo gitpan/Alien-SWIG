@@ -22,7 +22,7 @@ BEGIN {
     require Exporter;
     @ISA        = qw( Exporter );
     @EXPORT_OK  = qw( path version executable module_dir includes cmd_line );
-    $VERSION    = '0.02_01';
+    $VERSION    = '0.02_02';
 }
 
 *TRUE     = \1;

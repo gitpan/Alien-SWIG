@@ -23,7 +23,7 @@ use Alien::SWIG;
 
 use vars qw( $TRUE $FALSE $VERSION );
 BEGIN {
-    $VERSION = '0.02_01';
+    $VERSION = '0.02_02';
 }
 
 *TRUE      = \1;

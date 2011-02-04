@@ -17,7 +17,7 @@ use warnings;
 
 use vars qw( $VERSION $TRUE $FALSE );
 BEGIN {
-    $VERSION = '0.02_01';
+    $VERSION = '0.02_02';
 }
 *TRUE  = \1;
 *FALSE = \0;

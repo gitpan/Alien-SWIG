@@ -26,7 +26,7 @@ $|=1;
 ###
 
 use vars qw( $VERSION $TRUE $FALSE );
-$VERSION = '0.02_01';
+$VERSION = '0.02_02';
 *TRUE    = \1;
 *FALSE   = \0;
 
@@ -240,7 +240,7 @@ sub check_for_pcre
     my $pcre_exists = $pcre_config ? $TRUE : $FALSE;
 
     # XXX: Remove this after you figure out what's up in Ticket #46 ?
-    if( $pcre_exists and $^O eq 'FreeBSD' )
+    if( $pcre_exists and $^O =~ /FreeBSD/i )
 #    if( $pcre_exists )
     {
         print "\nFreeBSD detected.  Doing more extensive PCRE checks...\n\n";
